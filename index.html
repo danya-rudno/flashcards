@@ -105,6 +105,21 @@
             display: flex; align-items: center; justify-content: center; cursor: pointer; background: none; border: none; 
             color: var(--text-color); transition: transform 0.2s ease, color 0.3s ease; padding: 5px;
         }
+        .direction-btn {
+            width: 34px; height: 34px; flex: 0 0 34px;
+            display: flex; align-items: center; justify-content: center;
+            padding: 5px; border: 0; border-radius: 50%;
+            background: transparent; color: var(--text-color); cursor: pointer;
+            transition: transform 0.18s ease, color 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .direction-btn svg { width: 24px; height: 24px; transition: transform 0.22s ease; }
+        .direction-btn.is-reverse svg { transform: rotate(180deg); }
+        .direction-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+        @media (hover: hover) and (pointer: fine) {
+            .direction-btn:hover { transform: scale(1.08); }
+        }
+        .direction-btn:active { transform: scale(0.94); }
         .menu-btn svg, .sidebar-close svg { stroke: var(--text-color); transition: stroke 0.3s ease; }
         .menu-btn:hover, .sidebar-close:hover { transform: scale(1.1); }
         .menu-btn:active, .sidebar-close:active { transform: scale(0.9); }
@@ -314,7 +329,12 @@
             <div class="tab" onclick="setTab('known')" id="tab-known">Знаю<br><small>0</small></div>
             <div class="tab" onclick="setTab('unknown')" id="tab-unknown">Не знаю<br><small>0</small></div>
         </div>
-        <div style="width: 34px;"></div>
+        <button class="direction-btn" id="card-direction-btn" onclick="toggleCardDirection()" aria-label="Перевернути напрямок карток" aria-pressed="false" title="Перевернути напрямок карток">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 7h15l-4-4"></path><path d="M19 7l-4 4"></path>
+                <path d="M20 17H5l4 4"></path><path d="M5 17l4-4"></path>
+            </svg>
+        </button>
     </header>
 
     <div class="main-container">
@@ -349,18 +369,13 @@
             <button class="btn-save" style="margin-top: 15px;" onclick="openNewGroupModal()">+ Створити групу</button>
         </div>
         <div class="sidebar-tools">
-            <button class="tool-btn" onclick="resetCurrentGroup()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                Скинути прогрес групи
-            </button>
             <button class="tool-btn" onclick="toggleTheme()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
                 Світла / Темна тема
             </button>
-            <button class="tool-btn" id="card-direction-btn" onclick="toggleCardDirection()" aria-pressed="false">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3l4 4-4 4"/><path d="M4 7h16"/><path d="M8 21l-4-4 4-4"/><path d="M20 17H4"/></svg>
-                <span>Перевернути картки</span>
-                <span class="tool-btn-status" id="card-direction-status">UA → EN</span>
+            <button class="tool-btn" onclick="resetCurrentGroup()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                Скинути прогрес групи
             </button>
             <button class="tool-btn danger" onclick="factoryReset()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
@@ -471,12 +486,13 @@ function updateUI() {
 
 function updateCardDirectionButton() {
     const button = document.getElementById('card-direction-btn');
-    const status = document.getElementById('card-direction-status');
-    if (!button || !status) return;
+    if (!button) return;
 
-    button.classList.toggle('is-active', isReverseMode);
+    button.classList.toggle('is-reverse', isReverseMode);
     button.setAttribute('aria-pressed', String(isReverseMode));
-    status.textContent = isReverseMode ? 'EN → UA' : 'UA → EN';
+    button.setAttribute('aria-label', isReverseMode
+        ? 'Змінити напрямок карток на українська — англійська'
+        : 'Змінити напрямок карток на англійська — українська');
 }
 
 function toggleCardDirection() {
@@ -524,7 +540,12 @@ function setTab(tab) {
     buildCardStack();
 }
 
-function setActiveGroup(id) { activeGroupId = id; setTab('all'); toggleSidebar(); }
+function setActiveGroup(id) {
+    activeGroupId = id;
+    renderSidebar();
+    setTab('all');
+    toggleSidebar();
+}
 
 function renderWelcomeContent(text) {
     const lines = text.split(/\r?\n|\\n/);
