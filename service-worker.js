@@ -1,5 +1,5 @@
 
-const CACHE_NAME = "flashcards-v18";
+const CACHE_NAME = "flashcards-v19";
 
 const APP_FILES = [
   "./",
