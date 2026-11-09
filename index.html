@@ -644,7 +644,7 @@ function buildCardStack() {
             ? renderWelcomeContent(word.ua)
             : (englishOnFront ? uaFormatted : word.en);
         const ttsButton = word.reverse ? '' : `
-            <button type="button" class="tts-btn" onclick="speakText(this.dataset.text, event)" data-text="${String(word.en || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')}" aria-label="Озвучити англійське слово">
+            <button type="button" class="tts-btn" data-language="en" onclick="speakText(this.dataset.text, event)" data-text="${String(word.en || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')}" aria-label="Озвучити англійське слово">
                 <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
             </button>
         `;
@@ -1210,7 +1210,7 @@ async function saveGroup() {
         setTab('all');
     } else {
         const group = groups.find(g => g.id === activeGroupId);
-        currentCards = group.words.filter(w => true);
+        currentCards = group.words.filter(w => !w.hidden);
         updateUI();
     }
 }
