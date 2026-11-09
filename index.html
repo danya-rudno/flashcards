@@ -1459,6 +1459,24 @@ document.getElementById('confirm-yes-btn').addEventListener('click', () => {
 });
 
 init();
+
+// iOS PWA startup repaint: opening/closing the sidebar currently fixes a
+// stale top-area compositing layer, so request one harmless root repaint on launch.
+function refreshInitialPwaRendering() {
+    const root = document.documentElement;
+    const previousTransform = root.style.transform;
+    root.style.transform = 'translateZ(0)';
+    void root.offsetHeight;
+
+    requestAnimationFrame(() => {
+        root.style.transform = previousTransform;
+        void root.offsetHeight;
+    });
+}
+
+requestAnimationFrame(() => {
+    requestAnimationFrame(refreshInitialPwaRendering);
+});
 </script>
 <script>
   if ("serviceWorker" in navigator) {
