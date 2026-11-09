@@ -303,6 +303,13 @@
         
         .word-edit-item { display: flex; justify-content: space-between; padding: 12px 10px; border-bottom: 1px solid var(--border); align-items: center; transition: background-color 0.2s ease; border-radius: 6px; }
         .word-edit-item:hover { background: rgba(255,255,255,0.05); }
+        .word-edit-item.is-hidden { opacity: 0.48; }
+        .word-edit-item.is-hidden > span { color: var(--muted-text); }
+        .word-edit-actions .btn-toggle-hidden { color: var(--muted-text); }
+        .word-edit-actions .btn-toggle-hidden.is-hidden { color: var(--primary); opacity: 1; }
+        .btn-show-hidden { width: 100%; margin: 10px 0 6px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--item-bg); color: var(--text-color); cursor: pointer; font-size: 14px; }
+        .btn-show-hidden:hover { border-color: var(--primary); background: var(--item-hover-bg); }
+
         .word-edit-actions { display: flex; gap: 8px; }
         .word-edit-actions button { display: flex; align-items: center; justify-content: center; background: none; border: none; cursor: pointer; transition: transform 0.2s ease, color 0.2s ease; opacity: 0.8; padding: 5px; }
         .word-edit-actions button:hover { transform: scale(1.2); opacity: 1; }
@@ -428,6 +435,7 @@
                 <button class="btn-save" id="btn-save-group" onclick="saveGroup()">Зберегти групу</button>
 
                 <h3 style="margin-top:20px; font-size: 18px;">Слова у групі:</h3>
+                <button type="button" id="show-hidden-words-btn" class="btn-show-hidden" style="display:none;" onclick="showAllHiddenWords()">Показати всі приховані слова</button>
                 <div id="word-list-edit"></div>
             </div>
         </div>
@@ -538,9 +546,10 @@ function updateCounters() {
         document.getElementById('tab-unknown').innerHTML = `Не знаю<br><small>0</small>`;
         return;
     }
-    const all = group.words.length;
-    const known = group.words.filter(w => w.status === 'known').length;
-    const unknown = group.words.filter(w => w.status === 'unknown' || w.status === 'new').length;
+    const visibleWords = group.words.filter(w => !w.hidden);
+    const all = visibleWords.length;
+    const known = visibleWords.filter(w => w.status === 'known').length;
+    const unknown = visibleWords.filter(w => w.status === 'unknown' || w.status === 'new').length;
     
     document.getElementById('tab-all').innerHTML = `Усі<br><small>${all}</small>`;
     document.getElementById('tab-known').innerHTML = `Знаю<br><small>${known}</small>`;
@@ -556,6 +565,7 @@ function setTab(tab) {
     const group = groups.find(g => g.id === activeGroupId);
     if (group) {
         currentCards = group.words.filter(w => {
+            if (w.hidden) return false;
             if (activeTab === 'all') return true;
             if (activeTab === 'known') return w.status === 'known';
             if (activeTab === 'unknown') return w.status === 'unknown' || w.status === 'new';
@@ -594,8 +604,9 @@ function buildCardStack() {
     }
 
     if (currentCards.length === 0) {
-        const knownWordsCount = group.words.filter(w => w.status === 'known').length;
-        const unknownWordsCount = group.words.filter(w => w.status === 'unknown' || w.status === 'new').length;
+        const visibleWords = group.words.filter(w => !w.hidden);
+        const knownWordsCount = visibleWords.filter(w => w.status === 'known').length;
+        const unknownWordsCount = visibleWords.filter(w => w.status === 'unknown' || w.status === 'new').length;
 
         if (activeTab === 'all') {
             stack.innerHTML = `<div class="end-screen"><h2>У тебе закінчились слова в цій групі</h2><button class="btn-restart" onclick="setTab('all')">Спробувати ще раз</button></div>`;
@@ -625,7 +636,7 @@ function buildCardStack() {
         if (i > 0) card.style.transform = `scale(${1 - i*0.05}) translateY(${i*10}px)`;
 
         const uaFormatted = word.ua.replace(/(\([^)]+\))/g, '<span class="ua-subtext">$1</span>');
-        const englishOnFront = word.reverse || isReverseMode;
+        const englishOnFront = Boolean(word.reverse || isReverseMode);
         const frontText = word.reverse
             ? renderWelcomeContent(word.en)
             : (englishOnFront ? word.en : uaFormatted);
@@ -633,7 +644,7 @@ function buildCardStack() {
             ? renderWelcomeContent(word.ua)
             : (englishOnFront ? uaFormatted : word.en);
         const ttsButton = word.reverse ? '' : `
-            <button class="tts-btn" onclick="speakText('${word.en.replace(/'/g, "\\'")}', event)" aria-label="Озвучити">
+            <button type="button" class="tts-btn" onclick="speakText(this.dataset.text, event)" data-text="${String(word.en || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')}" aria-label="Озвучити англійське слово">
                 <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
             </button>
         `;
@@ -793,11 +804,12 @@ function showWordsView(groupId, event) {
     document.getElementById('words-view-title').textContent = group.name;
     const list = document.getElementById('words-view-list');
     list.innerHTML = '';
+    const visibleWords = group.words.filter(word => !word.hidden);
 
-    if (!group.words.length) {
-        list.innerHTML = '<div class="view-words-empty">У цій групі поки немає слів.</div>';
+    if (!visibleWords.length) {
+        list.innerHTML = '<div class="view-words-empty">Немає активних слів у цій групі.</div>';
     } else {
-        group.words.forEach(word => {
+        visibleWords.forEach(word => {
             const row = document.createElement('div');
             row.className = 'view-word-row';
             const english = document.createElement('div');
@@ -816,7 +828,6 @@ function showWordsView(groupId, event) {
     document.getElementById('words-view').classList.add('active');
     document.body.classList.add('words-view-active');
 }
-
 function closeWordsView() {
     document.getElementById('words-view').classList.remove('active');
     document.body.classList.remove('words-view-active');
@@ -851,9 +862,13 @@ function editGroup(id, event) {
 function renderEditWordList(groupId) {
     const group = groups.find(g => g.id === groupId);
     const wordList = document.getElementById('word-list-edit');
+    const showAllButton = document.getElementById('show-hidden-words-btn');
     wordList.innerHTML = '';
-    if(!group) return;
-    
+    if (!group) return;
+
+    const hiddenCount = group.words.filter(w => w.hidden).length;
+    if (showAllButton) showAllButton.style.display = hiddenCount ? 'block' : 'none';
+
     group.words.forEach(w => {
         if (editingWordId === w.id) {
             wordList.innerHTML += `
@@ -867,15 +882,20 @@ function renderEditWordList(groupId) {
                 </div>
             `;
         } else {
+            const hiddenClass = w.hidden ? ' is-hidden' : '';
+            const eyeIcon = w.hidden
+                ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"></path><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path><path d="M9.9 5.2A10.7 10.7 0 0 1 12 5c5 0 9 7 9 7a15.8 15.8 0 0 1-4 4.6"></path><path d="M6.2 6.2C3.6 7.8 2 12 2 12s4 7 10 7a10.4 10.4 0 0 0 3-.4"></path></svg>'
+                : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
             wordList.innerHTML += `
-                <div class="word-edit-item">
+                <div class="word-edit-item${hiddenClass}">
                     <span style="flex:1; line-height: 1.4;"><strong>EN:</strong> ${w.en} <br><strong>UA:</strong> ${w.ua}</span>
                     <div class="word-edit-actions">
+                        <button class="btn-toggle-hidden${w.hidden ? ' is-hidden' : ''}" onclick="toggleWordHidden('${group.id}', '${w.id}')" aria-label="${w.hidden ? 'Показати слово' : 'Приховати слово'}" title="${w.hidden ? 'Показати слово' : 'Приховати слово'}">${eyeIcon}</button>
                         <button class="btn-edit-word" onclick="editSingleWord('${group.id}', '${w.id}')" aria-label="Редагувати">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1-1-4 9.5-9.5z"/></svg>
                         </button>
                         <button class="btn-delete-word" onclick="deleteWord('${group.id}', '${w.id}')" aria-label="Видалити">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                         </button>
                     </div>
                 </div>
@@ -884,6 +904,34 @@ function renderEditWordList(groupId) {
     });
 }
 
+function toggleWordHidden(groupId, wordId) {
+    const group = groups.find(g => g.id === groupId);
+    if (!group) return;
+    const word = group.words.find(w => w.id === wordId);
+    if (!word) return;
+
+    word.hidden = !word.hidden;
+    saveData();
+
+    if (activeGroupId === groupId) {
+        setTab(activeTab);
+    }
+    renderEditWordList(groupId);
+}
+
+function showAllHiddenWords() {
+    const groupId = document.getElementById('edit-group-id').value;
+    const group = groups.find(g => g.id === groupId);
+    if (!group) return;
+
+    group.words.forEach(word => {
+        if (word.hidden) word.hidden = false;
+    });
+    saveData();
+
+    if (activeGroupId === groupId) setTab(activeTab);
+    renderEditWordList(groupId);
+}
 function editSingleWord(groupId, wordId) {
     editingWordId = wordId;
     renderEditWordList(groupId);
@@ -1146,7 +1194,8 @@ async function saveGroup() {
                     id: 'w' + Date.now() + Math.random(),
                     en: finalEn || '',
                     ua: finalUa || '',
-                    status: 'new'
+                    status: 'new',
+                    hidden: false
                 });
             }
         }
