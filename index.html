@@ -199,9 +199,10 @@
         .view-word-en { color: var(--text-color); font-weight: 600; }
         .view-word-ua { color: var(--muted-text); }
         .view-word-row.is-hidden .view-word-en, .view-word-row.is-hidden .view-word-ua { color: var(--muted-text); }
-        .view-word-toggle { display: flex; flex: 0 0 34px; width: 34px; height: 34px; align-items: center; justify-content: center; padding: 7px; border: 0; border-radius: 7px; background: transparent; color: var(--muted-text); cursor: pointer; }
+        .view-word-toggle { display: flex; flex: 0 0 34px; width: 34px; height: 34px; align-items: center; justify-content: center; padding: 7px; border: 0; border-radius: 7px; background: transparent; color: var(--muted-text); cursor: pointer; -webkit-tap-highlight-color: transparent; outline: none; box-shadow: none; }
         .view-word-toggle:hover { background: var(--item-hover-bg); color: var(--primary); }
-        .view-word-toggle svg { display: block; width: 18px; height: 18px; flex: 0 0 18px; }
+        .view-word-toggle:focus, .view-word-toggle:focus-visible, .view-word-toggle:active { outline: none; box-shadow: none; background: transparent; }
+        .view-word-toggle svg { display: block; width: 18px; height: 18px; flex: 0 0 18px; pointer-events: none; }
         .view-word-toggle.is-hidden { color: var(--primary); }
         .view-words-empty { padding: 30px 10px; text-align: center; color: var(--muted-text); }
         .word-edit-item { min-width: 0; gap: 10px; }
@@ -287,7 +288,7 @@
         .tool-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
         .tool-btn-status { margin-left: auto; font-size: 12px; font-weight: 600; opacity: 0.75; white-space: nowrap; }
 
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 99; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; backdrop-filter: blur(2px); }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 99; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; -webkit-backdrop-filter: none; backdrop-filter: none; }
         .overlay.show { opacity: 1; pointer-events: all; }
         
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 200; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; backdrop-filter: blur(4px); }
@@ -497,16 +498,20 @@ function init() {
     const savedGroups = localStorage.getItem('flashcardGroupsV3');
     const savedTheme = localStorage.getItem('flashcardThemeV3');
     const savedDirection = localStorage.getItem('flashcardDirectionV1');
+    const savedActiveGroupId = localStorage.getItem('flashcardActiveGroupV1');
     isReverseMode = savedDirection === 'reverse';
     if (savedGroups) { 
-        groups = JSON.parse(savedGroups); 
-        if(!groups.find(g => g.id === activeGroupId)) {
-            activeGroupId = groups[0] ? groups[0].id : null; 
-        }
+        groups = JSON.parse(savedGroups);
+        activeGroupId = groups.some(g => g.id === savedActiveGroupId)
+            ? savedActiveGroupId
+            : (groups[0] ? groups[0].id : null);
     } else { 
         groups = JSON.parse(JSON.stringify(defaultData));
         activeGroupId = groups[0] ? groups[0].id : null;
         saveData();
+    }
+    if (activeGroupId) {
+        localStorage.setItem('flashcardActiveGroupV1', activeGroupId);
     }
     
     if (savedTheme === 'light') toggleTheme(true);
@@ -590,6 +595,7 @@ function setTab(tab) {
 
 function setActiveGroup(id) {
     activeGroupId = id;
+    localStorage.setItem('flashcardActiveGroupV1', id);
     renderSidebar();
     setTab('all');
     toggleSidebar();
@@ -840,7 +846,11 @@ function renderWordsView(groupId) {
             toggle.innerHTML = hidden
                 ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"></path><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path><path d="M9.9 5.2A10.7 10.7 0 0 1 12 5c5 0 9 7 9 7a15.8 15.8 0 0 1-4 4.6"></path><path d="M6.2 6.2C3.6 7.8 2 12 2 12s4 7 10 7a10.4 10.4 0 0 0 3-.4"></path></svg>'
                 : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
-            toggle.addEventListener('click', () => toggleWordHidden(groupId, word.id));
+            toggle.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.currentTarget.blur();
+                toggleWordHidden(groupId, word.id);
+            });
             row.append(english, ukrainian, toggle);
             list.appendChild(row);
         });
