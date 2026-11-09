@@ -1284,7 +1284,14 @@ async function saveGroup() {
 
 function deleteGroup(id) {
     groups = groups.filter(g => g.id !== id);
-    if(activeGroupId === id) activeGroupId = groups[0] ? groups[0].id : null;
+    if(activeGroupId === id) {
+        activeGroupId = groups[0] ? groups[0].id : null;
+        if (activeGroupId) {
+            localStorage.setItem('flashcardActiveGroupV1', activeGroupId);
+        } else {
+            localStorage.removeItem('flashcardActiveGroupV1');
+        }
+    }
     
     saveData(); 
     renderSidebar(); // ДОДАНО: миттєво оновлюємо візуал бічної панелі
