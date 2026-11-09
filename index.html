@@ -312,8 +312,8 @@
         .tool-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
         .tool-btn-status { margin-left: auto; font-size: 12px; font-weight: 600; opacity: 0.75; white-space: nowrap; }
 
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 99; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; backdrop-filter: blur(2px); }
-        .overlay.show { opacity: 1; pointer-events: all; }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 99; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .overlay.show { opacity: 1; pointer-events: all; -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
         
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 200; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; backdrop-filter: blur(4px); }
         .modal.show { opacity: 1; pointer-events: all; }
