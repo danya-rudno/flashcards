@@ -216,6 +216,7 @@
         
         .card {
             position: absolute; width: 100%; height: 100%; border-radius: 20px; cursor: grab;
+            transform-style: preserve-3d; -webkit-transform-style: preserve-3d;
             transition: transform 0.4s ease, opacity 0.4s ease, box-shadow 0.2s;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             display: flex; justify-content: center; align-items: center; text-align: center;
@@ -224,16 +225,18 @@
         
         .card-face {
             position: absolute; width: 100%; height: 100%;
+            backface-visibility: hidden; -webkit-backface-visibility: hidden;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             border-radius: 20px; padding: 20px; font-size: 28px; font-weight: bold; color: var(--card-text);
             transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
         }
         
         .front { background-color: var(--card-front); border: 2px solid var(--border); } 
-        .back { display: none; background-color: var(--card-back); border: 2px solid var(--border); }
-        /* Swap faces in normal document flow instead of relying on iOS 3D backface painting. */
-        .card.is-flipped .front { display: none; }
-        .card.is-flipped .back { display: flex; }
+        .back { background-color: var(--card-back); transform: rotateY(180deg); border: 2px solid var(--border); }
+        .is-flipped { transform: rotateY(180deg); }
+        /* Hide the speaker button in the inactive face's layout tree, not just visually. */
+        .card:not(.is-flipped) .back .tts-btn,
+        .card.is-flipped .front .tts-btn { display: none; }
         .tts-btn { position: absolute; bottom: 20px; right: 20px; background: var(--tts-bg); border: none; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; color: var(--tts-color); display: flex; justify-content: center; align-items: center; z-index: 5; transition: all 0.2s ease; }
         .tts-btn:hover { background: var(--tts-hover); transform: scale(1.1); }
         .tts-btn:active { transform: scale(0.9); }
@@ -328,6 +331,26 @@
         .word-edit-actions button:focus { outline: none; }
         @media (hover: hover) and (pointer: fine) {
             .word-edit-actions button:hover { transform: scale(1.2); opacity: 1; }
+        }
+        /* Touch browsers can keep a pressed/hover state on the next control after a row changes. */
+        @media (hover: none), (pointer: coarse) {
+            .word-edit-actions button:hover,
+            .word-edit-actions button:active,
+            .word-edit-actions button:focus,
+            .word-edit-actions button:focus-visible {
+                transform: none;
+                opacity: 0.8;
+                color: var(--muted-text);
+                outline: none;
+                box-shadow: none;
+            }
+            .word-edit-actions .btn-toggle-hidden.is-hidden,
+            .word-edit-actions .btn-toggle-hidden.is-hidden:hover,
+            .word-edit-actions .btn-toggle-hidden.is-hidden:active,
+            .word-edit-actions .btn-toggle-hidden.is-hidden:focus {
+                color: var(--primary);
+                opacity: 1;
+            }
         }
         .btn-edit-word { color: var(--primary); }
         .btn-delete-word { color: var(--danger); }
