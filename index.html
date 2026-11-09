@@ -216,27 +216,25 @@
         
         .card {
             position: absolute; width: 100%; height: 100%; border-radius: 20px; cursor: grab;
-            transform-style: preserve-3d; -webkit-transform-style: preserve-3d; transition: transform 0.4s ease, opacity 0.4s ease, box-shadow 0.2s;
+            transition: transform 0.4s ease, opacity 0.4s ease, box-shadow 0.2s;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             display: flex; justify-content: center; align-items: center; text-align: center;
         }
         .card.swiping { transition: none; }
         
         .card-face {
-            position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+            position: absolute; width: 100%; height: 100%;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             border-radius: 20px; padding: 20px; font-size: 28px; font-weight: bold; color: var(--card-text);
             transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
         }
         
         .front { background-color: var(--card-front); border: 2px solid var(--border); } 
-        .back { background-color: var(--card-back); transform: rotateY(180deg); border: 2px solid var(--border); } 
-        .is-flipped { transform: rotateY(180deg); }
-
-        /* Keep the speaker visible only on the face currently shown (iOS Safari can paint 3D backfaces inconsistently). */
-        .card:not(.is-flipped) .back .tts-btn,
-        .card.is-flipped .front .tts-btn { visibility: hidden; pointer-events: none; }
-        .tts-btn { -webkit-backface-visibility: hidden; backface-visibility: hidden; position: absolute; bottom: 20px; right: 20px; background: var(--tts-bg); border: none; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; color: var(--tts-color); display: flex; justify-content: center; align-items: center; z-index: 5; transition: all 0.2s ease; }
+        .back { display: none; background-color: var(--card-back); border: 2px solid var(--border); }
+        /* Swap faces in normal document flow instead of relying on iOS 3D backface painting. */
+        .card.is-flipped .front { display: none; }
+        .card.is-flipped .back { display: flex; }
+        .tts-btn { position: absolute; bottom: 20px; right: 20px; background: var(--tts-bg); border: none; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; color: var(--tts-color); display: flex; justify-content: center; align-items: center; z-index: 5; transition: all 0.2s ease; }
         .tts-btn:hover { background: var(--tts-hover); transform: scale(1.1); }
         .tts-btn:active { transform: scale(0.9); }
         .tts-btn svg { width: 22px; height: 22px; stroke: currentColor; }
@@ -930,6 +928,12 @@ function editGroup(id, event) {
     if(document.getElementById('sidebar').classList.contains('open')) toggleSidebar();
 }
 
+function getEyeIcon(isHidden) {
+    return isHidden
+        ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"></path><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path><path d="M9.9 5.2A10.7 10.7 0 0 1 12 5c5 0 9 7 9 7a15.8 15.8 0 0 1-4 4.6"></path><path d="M6.2 6.2C3.6 7.8 2 12 2 12s4 7 10 7a10.4 10.4 0 0 0 3-.4"></path></svg>'
+        : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+}
+
 function renderEditWordList(groupId) {
     const group = groups.find(g => g.id === groupId);
     const wordList = document.getElementById('word-list-edit');
@@ -954,9 +958,7 @@ function renderEditWordList(groupId) {
             `;
         } else {
             const hiddenClass = w.hidden ? ' is-hidden' : '';
-            const eyeIcon = w.hidden
-                ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"></path><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path><path d="M9.9 5.2A10.7 10.7 0 0 1 12 5c5 0 9 7 9 7a15.8 15.8 0 0 1-4 4.6"></path><path d="M6.2 6.2C3.6 7.8 2 12 2 12s4 7 10 7a10.4 10.4 0 0 0 3-.4"></path></svg>'
-                : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+            const eyeIcon = getEyeIcon(w.hidden);
             wordList.innerHTML += `
                 <div class="word-edit-item${hiddenClass}">
                     <span style="flex:1; line-height: 1.4;"><strong>EN:</strong> ${w.en} <br><strong>UA:</strong> ${w.ua}</span>
@@ -976,11 +978,6 @@ function renderEditWordList(groupId) {
 }
 
 function toggleWordHidden(groupId, wordId, event) {
-    // Blur the tapped control before rebuilding the list; iOS Safari may transfer
-    // the touch focus to the next button occupying the same screen position.
-    if (event && event.currentTarget && typeof event.currentTarget.blur === 'function') {
-        event.currentTarget.blur();
-    }
     const group = groups.find(g => g.id === groupId);
     if (!group) return;
     const word = group.words.find(w => w.id === wordId);
@@ -989,19 +986,30 @@ function toggleWordHidden(groupId, wordId, event) {
     word.hidden = !word.hidden;
     saveData();
 
+    // Update only the tapped row. Rebuilding the whole list during an iPhone tap
+    // can leave Safari's pressed/focused state on the next button at that position.
+    const button = event && event.currentTarget;
+    const row = button && button.closest('.word-edit-item');
+    if (row) {
+        row.classList.toggle('is-hidden', word.hidden);
+        button.classList.toggle('is-hidden', word.hidden);
+        button.innerHTML = getEyeIcon(word.hidden);
+        button.setAttribute('aria-label', word.hidden ? 'Показати слово' : 'Приховати слово');
+        button.setAttribute('title', word.hidden ? 'Показати слово' : 'Приховати слово');
+    } else {
+        renderEditWordList(groupId);
+    }
+
+    const hiddenCount = group.words.filter(w => w.hidden).length;
+    const showAllButton = document.getElementById('show-hidden-words-btn');
+    if (showAllButton) showAllButton.style.display = hiddenCount ? 'block' : 'none';
+
     if (activeGroupId === groupId) {
         setTab(activeTab);
     }
-    renderEditWordList(groupId);
     if (document.getElementById('words-view').classList.contains('active')) {
         renderWordsView(groupId);
     }
-    requestAnimationFrame(() => {
-        const focusedToggle = document.activeElement;
-        if (focusedToggle && focusedToggle.classList && focusedToggle.classList.contains('btn-toggle-hidden')) {
-            focusedToggle.blur();
-        }
-    });
 }
 
 function showAllHiddenWords() {
