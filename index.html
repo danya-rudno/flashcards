@@ -193,10 +193,22 @@
         .words-view-back { display: flex; align-items: center; gap: 7px; padding: 9px 12px; border: 1px solid var(--border); border-radius: 9px; background: var(--item-bg); color: var(--text-color); cursor: pointer; font-size: 14px; transition: background 0.2s ease, border-color 0.2s ease; }
         .words-view-back:hover { background: var(--item-hover-bg); border-color: var(--primary); }
         .words-view-list { overflow-y: auto; padding: 8px 20px 24px; }
-        .view-word-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; padding: 14px 4px; border-bottom: 1px solid var(--border); line-height: 1.45; overflow-wrap: anywhere; }
+        .view-words-section-title { margin: 18px 0 4px; padding: 8px 4px; color: var(--muted-text); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid var(--border); }
+        .view-word-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: center; gap: 16px; padding: 14px 4px; border-bottom: 1px solid var(--border); line-height: 1.45; overflow-wrap: anywhere; }
+        .view-word-row.is-hidden { opacity: .5; }
         .view-word-en { color: var(--text-color); font-weight: 600; }
         .view-word-ua { color: var(--muted-text); }
+        .view-word-row.is-hidden .view-word-en, .view-word-row.is-hidden .view-word-ua { color: var(--muted-text); }
+        .view-word-toggle { display: flex; flex: 0 0 34px; width: 34px; height: 34px; align-items: center; justify-content: center; padding: 7px; border: 0; border-radius: 7px; background: transparent; color: var(--muted-text); cursor: pointer; }
+        .view-word-toggle:hover { background: var(--item-hover-bg); color: var(--primary); }
+        .view-word-toggle svg { display: block; width: 18px; height: 18px; flex: 0 0 18px; }
+        .view-word-toggle.is-hidden { color: var(--primary); }
         .view-words-empty { padding: 30px 10px; text-align: center; color: var(--muted-text); }
+        .word-edit-item { min-width: 0; gap: 10px; }
+        .word-edit-item > span { min-width: 0; overflow-wrap: anywhere; }
+        .word-edit-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; }
+        .word-edit-actions button { box-sizing: border-box; flex: 0 0 30px; width: 30px; height: 30px; min-width: 30px; padding: 5px; }
+        .word-edit-actions button svg { display: block; flex: 0 0 18px; width: 18px; height: 18px; min-width: 18px; }
         body.words-view-active .tabs, body.words-view-active .direction-btn, body.words-view-active .controls { display: none; }
         body.words-view-active .main-container { align-items: stretch; }
         body.words-view-active .card-stack { display: none; }
@@ -781,11 +793,11 @@ function renderSidebar() {
         div.innerHTML = `
             <span onclick="setActiveGroup('${g.id}')" style="flex:1;">${g.name} (${g.words.length})</span>
             <div class="group-actions">
-                <button onclick="editGroup('${g.id}', event)" aria-label="Редагувати">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                </button>
                 <button onclick="showWordsView('${g.id}', event)" aria-label="Переглянути слова" title="Переглянути слова">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path><path d="M8 7h8"></path><path d="M8 11h8"></path></svg>
+                </button>
+                <button onclick="editGroup('${g.id}', event)" aria-label="Редагувати">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </button>
                 <button onclick="confirmAction('Видалити групу назавжди?', () => deleteGroup('${g.id}'), event)" aria-label="Видалити">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
@@ -796,32 +808,74 @@ function renderSidebar() {
     });
 }
 
-function showWordsView(groupId, event) {
-    if (event) event.stopPropagation();
+function renderWordsView(groupId) {
     const group = groups.find(g => g.id === groupId);
     if (!group) return;
 
     document.getElementById('words-view-title').textContent = group.name;
     const list = document.getElementById('words-view-list');
     list.innerHTML = '';
-    const visibleWords = group.words.filter(word => !word.hidden);
 
-    if (!visibleWords.length) {
-        list.innerHTML = '<div class="view-words-empty">Немає активних слів у цій групі.</div>';
-    } else {
-        visibleWords.forEach(word => {
+    const visibleWords = group.words.filter(word => !word.hidden);
+    const hiddenWords = group.words.filter(word => word.hidden);
+
+    function appendWordRows(words, hidden) {
+        words.forEach(word => {
             const row = document.createElement('div');
-            row.className = 'view-word-row';
+            row.className = 'view-word-row' + (hidden ? ' is-hidden' : '');
+
             const english = document.createElement('div');
             english.className = 'view-word-en';
             english.textContent = word.en || '—';
+
             const ukrainian = document.createElement('div');
             ukrainian.className = 'view-word-ua';
             ukrainian.textContent = word.ua || '—';
-            row.append(english, ukrainian);
+
+            const toggle = document.createElement('button');
+            toggle.type = 'button';
+            toggle.className = 'view-word-toggle' + (hidden ? ' is-hidden' : '');
+            toggle.setAttribute('aria-label', hidden ? 'Показати слово' : 'Приховати слово');
+            toggle.title = hidden ? 'Показати слово' : 'Приховати слово';
+            toggle.innerHTML = hidden
+                ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"></path><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path><path d="M9.9 5.2A10.7 10.7 0 0 1 12 5c5 0 9 7 9 7a15.8 15.8 0 0 1-4 4.6"></path><path d="M6.2 6.2C3.6 7.8 2 12 2 12s4 7 10 7a10.4 10.4 0 0 0 3-.4"></path></svg>'
+                : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+            toggle.addEventListener('click', () => toggleWordHidden(groupId, word.id));
+            row.append(english, ukrainian, toggle);
             list.appendChild(row);
         });
     }
+
+    if (visibleWords.length) {
+        const title = document.createElement('div');
+        title.className = 'view-words-section-title';
+        title.textContent = 'Активні слова';
+        list.appendChild(title);
+        appendWordRows(visibleWords, false);
+    }
+
+    if (hiddenWords.length) {
+        const title = document.createElement('div');
+        title.className = 'view-words-section-title';
+        title.textContent = 'Приховані слова';
+        list.appendChild(title);
+        appendWordRows(hiddenWords, true);
+    }
+
+    if (!visibleWords.length && !hiddenWords.length) {
+        list.innerHTML = '<div class="view-words-empty">У цій групі ще немає слів.</div>';
+    } else if (!visibleWords.length) {
+        const empty = document.createElement('div');
+        empty.className = 'view-words-empty';
+        empty.textContent = 'Немає активних слів у цій групі.';
+        list.insertBefore(empty, list.firstChild);
+    }
+}
+
+function showWordsView(groupId, event) {
+    if (event) event.stopPropagation();
+    if (!groups.find(g => g.id === groupId)) return;
+    renderWordsView(groupId);
 
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('overlay').classList.remove('show');
@@ -895,7 +949,7 @@ function renderEditWordList(groupId) {
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1-1-4 9.5-9.5z"/></svg>
                         </button>
                         <button class="btn-delete-word" onclick="deleteWord('${group.id}', '${w.id}')" aria-label="Видалити">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                         </button>
                     </div>
                 </div>
@@ -917,6 +971,9 @@ function toggleWordHidden(groupId, wordId) {
         setTab(activeTab);
     }
     renderEditWordList(groupId);
+    if (document.getElementById('words-view').classList.contains('active')) {
+        renderWordsView(groupId);
+    }
 }
 
 function showAllHiddenWords() {
