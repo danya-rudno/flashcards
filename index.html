@@ -160,10 +160,12 @@
             -webkit-filter: none !important;
             text-shadow: none;
         }
-        .tab:hover {
-            border-color: var(--primary);
-            transform: none !important;
-            box-shadow: none;
+        @media (hover: hover) and (pointer: fine) {
+            .tab:hover {
+                border-color: var(--primary);
+                transform: none !important;
+                box-shadow: none;
+            }
         }
         .tab.active {
             background: var(--primary);
