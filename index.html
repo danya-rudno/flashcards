@@ -40,6 +40,8 @@
             --tts-hover: rgba(255,255,255,0.35);
         }
 
+        html { background-color: var(--bg-color); }
+
         .light-theme {
             --bg-color: #f3f4f6;
             --text-color: #111827;
@@ -1411,9 +1413,11 @@ function factoryReset() {
 function toggleTheme(forceLight = false) {
     if (forceLight === true || !document.body.classList.contains('light-theme')) {
         document.body.classList.add('light-theme');
+        document.documentElement.classList.add('light-theme');
         localStorage.setItem('flashcardThemeV3', 'light');
     } else {
         document.body.classList.remove('light-theme');
+        document.documentElement.classList.remove('light-theme');
         localStorage.setItem('flashcardThemeV3', 'dark');
     }
 }
