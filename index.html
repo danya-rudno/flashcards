@@ -199,10 +199,29 @@
         .view-word-en { color: var(--text-color); font-weight: 600; }
         .view-word-ua { color: var(--muted-text); }
         .view-word-row.is-hidden .view-word-en, .view-word-row.is-hidden .view-word-ua { color: var(--muted-text); }
-        .view-word-toggle { display: flex; flex: 0 0 34px; width: 34px; height: 34px; align-items: center; justify-content: center; padding: 7px; border: 0; border-radius: 7px; background: transparent; color: var(--muted-text); cursor: pointer; }
-        .view-word-toggle:hover { background: var(--item-hover-bg); color: var(--primary); }
+        .view-word-toggle { display: flex; flex: 0 0 34px; width: 34px; height: 34px; align-items: center; justify-content: center; padding: 7px; border: 0; border-radius: 7px; background: transparent; color: var(--muted-text); cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+        @media (hover: hover) and (pointer: fine) {
+            .view-word-toggle:hover { background: var(--item-hover-bg); color: var(--primary); }
+        }
         .view-word-toggle svg { display: block; width: 18px; height: 18px; flex: 0 0 18px; }
         .view-word-toggle.is-hidden { color: var(--primary); }
+        /* On touch devices, prevent Safari's sticky hover/pressed state from appearing on the next row after the list is rebuilt. */
+        @media (hover: none), (pointer: coarse) {
+            .view-word-toggle:hover,
+            .view-word-toggle:active,
+            .view-word-toggle:focus {
+                background: transparent;
+                color: var(--muted-text);
+                outline: none;
+                box-shadow: none;
+            }
+            .view-word-toggle.is-hidden,
+            .view-word-toggle.is-hidden:hover,
+            .view-word-toggle.is-hidden:active,
+            .view-word-toggle.is-hidden:focus {
+                color: var(--primary);
+            }
+        }
         .view-words-empty { padding: 30px 10px; text-align: center; color: var(--muted-text); }
         .word-edit-item { min-width: 0; gap: 10px; }
         .word-edit-item > span { min-width: 0; overflow-wrap: anywhere; }
