@@ -565,6 +565,7 @@ function init() {
     }
     
     if (savedTheme === 'light') toggleTheme(true);
+    else updateSystemTheme();
     updateCardDirectionButton();
     
     renderSidebar();
@@ -1410,6 +1411,16 @@ function factoryReset() {
     });
 }
 
+function updateSystemTheme() {
+    const isLight = document.body.classList.contains('light-theme');
+    const themeColor = isLight ? '#f3f4f6' : '#121212';
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
+    const statusBarMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+
+    if (themeMeta) themeMeta.setAttribute('content', themeColor);
+    if (statusBarMeta) statusBarMeta.setAttribute('content', isLight ? 'default' : 'black');
+}
+
 function toggleTheme(forceLight = false) {
     if (forceLight === true || !document.body.classList.contains('light-theme')) {
         document.body.classList.add('light-theme');
@@ -1420,6 +1431,7 @@ function toggleTheme(forceLight = false) {
         document.documentElement.classList.remove('light-theme');
         localStorage.setItem('flashcardThemeV3', 'dark');
     }
+    updateSystemTheme();
 }
 
 function speakText(text, event) {
