@@ -216,14 +216,14 @@
         
         .card {
             position: absolute; width: 100%; height: 100%; border-radius: 20px; cursor: grab;
-            transform-style: preserve-3d; transition: transform 0.4s ease, opacity 0.4s ease, box-shadow 0.2s;
+            transform-style: preserve-3d; -webkit-transform-style: preserve-3d; transition: transform 0.4s ease, opacity 0.4s ease, box-shadow 0.2s;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             display: flex; justify-content: center; align-items: center; text-align: center;
         }
         .card.swiping { transition: none; }
         
         .card-face {
-            position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+            position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             border-radius: 20px; padding: 20px; font-size: 28px; font-weight: bold; color: var(--card-text);
             transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
@@ -324,7 +324,9 @@
 
         .word-edit-actions { display: flex; gap: 8px; }
         .word-edit-actions button { display: flex; align-items: center; justify-content: center; background: none; border: none; cursor: pointer; transition: transform 0.2s ease, color 0.2s ease; opacity: 0.8; padding: 5px; }
-        .word-edit-actions button:hover { transform: scale(1.2); opacity: 1; }
+        @media (hover: hover) and (pointer: fine) {
+            .word-edit-actions button:hover { transform: scale(1.2); opacity: 1; }
+        }
         .btn-edit-word { color: var(--primary); }
         .btn-delete-word { color: var(--danger); }
 
@@ -497,10 +499,13 @@ function init() {
     const savedGroups = localStorage.getItem('flashcardGroupsV3');
     const savedTheme = localStorage.getItem('flashcardThemeV3');
     const savedDirection = localStorage.getItem('flashcardDirectionV1');
+    const savedActiveGroupId = localStorage.getItem('flashcardActiveGroupV1');
     isReverseMode = savedDirection === 'reverse';
     if (savedGroups) { 
         groups = JSON.parse(savedGroups); 
-        if(!groups.find(g => g.id === activeGroupId)) {
+        if (savedActiveGroupId && groups.some(g => g.id === savedActiveGroupId)) {
+            activeGroupId = savedActiveGroupId;
+        } else if (!groups.some(g => g.id === activeGroupId)) {
             activeGroupId = groups[0] ? groups[0].id : null; 
         }
     } else { 
@@ -522,7 +527,14 @@ function init() {
     }
 }
 
-function saveData() { localStorage.setItem('flashcardGroupsV3', JSON.stringify(groups)); }
+function saveData() {
+    localStorage.setItem('flashcardGroupsV3', JSON.stringify(groups));
+    if (activeGroupId && groups.some(g => g.id === activeGroupId)) {
+        localStorage.setItem('flashcardActiveGroupV1', activeGroupId);
+    } else {
+        localStorage.removeItem('flashcardActiveGroupV1');
+    }
+}
 
 function updateUI() {
     renderSidebar();
@@ -590,6 +602,7 @@ function setTab(tab) {
 
 function setActiveGroup(id) {
     activeGroupId = id;
+    saveData();
     renderSidebar();
     setTab('all');
     toggleSidebar();
