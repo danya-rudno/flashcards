@@ -1382,7 +1382,7 @@ function resetCurrentGroup() {
     confirmAction('Скинути всі слова у стан "Не вивчено"?', () => {
         const group = groups.find(g => g.id === activeGroupId);
         if(group) {
-            group.words.forEach(w => w.status = 'new');
+            group.words.forEach(w => { w.status = 'new'; w.hidden = false; });
             saveData(); 
             updateCounters();
             setTab('all'); 
